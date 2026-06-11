@@ -16,7 +16,9 @@ dependencies = [
     "pydantic>=2.7",
 ]
 
-[project.optional-dependencies]
+# PEP 735 dependency group: installed by default by `uv sync` / `uv run`,
+# so `uv run pytest` works out of the box.
+[dependency-groups]
 dev = [
     "pytest>=8.0",
     "pytest-cov>=5.0",

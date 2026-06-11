@@ -32,13 +32,16 @@ Documentation:
 ## Setup
 
 ```bash
-uv venv && source .venv/bin/activate
-uv pip install -e ".[dev]"
+# One command: creates the virtual environment and installs all
+# dependencies including the dev group (pytest etc.)
+uv sync
 
 # API keys: copy the sample and fill in your keys (.env is git-ignored
 # and loaded automatically at startup)
 cp .env.sample .env
 ```
+
+All later commands go through `uv run ...` — no manual venv activation needed.
 
 ## Usage
 
