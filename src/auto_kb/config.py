@@ -9,7 +9,7 @@ import os
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from dotenv import load_dotenv
+from dotenv import find_dotenv, load_dotenv
 
 # Default LLM; override via --model or AUTO_KB_MODEL.
 DEFAULT_MODEL = "gpt-4o-mini"
@@ -20,9 +20,11 @@ def load_env() -> None:
     """Load `.env` from the current working directory (and parents).
 
     Existing environment variables win over .env values, so deployment
-    overrides keep working.
+    overrides keep working. usecwd=True anchors the search at the
+    invocation directory (not this module's install location), which is
+    what users expect when they run `auto-kb` inside their project.
     """
-    load_dotenv(override=False)
+    load_dotenv(find_dotenv(usecwd=True), override=False)
 
 
 @dataclass
