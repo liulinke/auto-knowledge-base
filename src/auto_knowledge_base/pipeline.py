@@ -42,6 +42,17 @@ KEYWORDS_PROMPT = (
     "Topic: {topic}"
 )
 
+QUALITY_CHECK_PROMPT = (
+    "You are a content quality evaluator for a research knowledge base.\n"
+    "Reply with exactly KEEP or SKIP — nothing else.\n\n"
+    "SKIP when the page is mostly: navigation menus, empty section headings with "
+    "no body text, tag clouds, boilerplate footers, stub articles, or other "
+    "non-informative filler.\n"
+    "KEEP only when the article contains real explanatory content a reader would "
+    "find genuinely useful.\n\n"
+    "Title: {title}\n\nContent (first 2000 chars):\n{body}"
+)
+
 ANALYZE_PROMPT = (
     "Analyze the article below and reply EXACTLY in this format:\n"
     "SUMMARY: <2-3 sentence summary>\n"
@@ -132,6 +143,13 @@ def build_pipeline(llm: BaseChatModel, search_client: SearchClient,
             # Content-level dedup catches the same article behind a new URL.
             h = content_hash(body)
             if h in known_hashes:
+                skipped += 1
+                continue
+
+            # Reject stub/boilerplate pages (navigation, empty headings, footers).
+            quality = _llm_text(llm, QUALITY_CHECK_PROMPT.format(
+                title=title or result.url, body=body[:2000]))
+            if "KEEP" not in quality.upper():
                 skipped += 1
                 continue
 

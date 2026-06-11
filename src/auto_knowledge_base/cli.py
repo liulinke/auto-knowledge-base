@@ -34,6 +34,36 @@ def _add_common_args(p: argparse.ArgumentParser, cfg: AppConfig) -> None:
     p.add_argument("--kb", required=True, help="knowledge base name (one folder per kb)")
     p.add_argument("--data-root", default=str(cfg.data_root), help="storage root directory")
     p.add_argument("--model", default=cfg.model_name, help="OpenAI model name")
+    p.add_argument("--debug", choices=["console", "langfuse"], default=None,
+                   help="inspect LLM input/output: 'console' prints every prompt/"
+                        "response, 'langfuse' sends traces to a Langfuse server "
+                        "(see docs/llm-debugging.md)")
+
+
+def _debug_callbacks(mode: str | None) -> list:
+    """Translate --debug into LangChain callbacks and/or global flags.
+
+    Returns the callback list to pass via `config={"callbacks": ...}` so
+    LangGraph propagates it to every LLM call inside the graph.
+    """
+    if mode == "console":
+        # Global switch: dumps every chain/LLM input and output to stdout.
+        from langchain_core.globals import set_debug
+        set_debug(True)
+        return []
+    if mode == "langfuse":
+        # Reads LANGFUSE_PUBLIC_KEY / LANGFUSE_SECRET_KEY / LANGFUSE_HOST
+        # from the environment (populated from .env by load_env()).
+        from langfuse.langchain import CallbackHandler
+        return [CallbackHandler()]
+    return []
+
+
+def _flush_debug(mode: str | None) -> None:
+    """Flush buffered traces before the process exits (langfuse mode only)."""
+    if mode == "langfuse":
+        from langfuse import get_client
+        get_client().flush()
 
 
 def cmd_build(args: argparse.Namespace) -> int:
@@ -43,7 +73,10 @@ def cmd_build(args: argparse.Namespace) -> int:
     storage = KnowledgeBaseStorage(args.data_root, args.user, args.kb)
     pipeline = build_pipeline(_make_llm(args.model), _make_search(),
                               storage, max_results=args.max_results)
-    result = pipeline.invoke({"topic": args.topic})
+    callbacks = _debug_callbacks(args.debug)
+    result = pipeline.invoke({"topic": args.topic},
+                             config={"callbacks": callbacks})
+    _flush_debug(args.debug)
 
     saved = result.get("saved", [])
     print(f"Knowledge base: {storage.root}")
@@ -61,6 +94,7 @@ def cmd_agent(args: argparse.Namespace) -> int:
 
     storage = KnowledgeBaseStorage(args.data_root, args.user, args.kb)
     agent = create_kb_agent(_make_llm(args.model), _make_search(), storage)
+    callbacks = _debug_callbacks(args.debug)
 
     print(f"Knowledge base: {storage.root}")
     print("Type a research request, or 'quit' to exit.")
@@ -73,9 +107,11 @@ def cmd_agent(args: argparse.Namespace) -> int:
         if not user_input or user_input.lower() in {"quit", "exit"}:
             break
         messages.append({"role": "user", "content": user_input})
-        state = agent.invoke({"messages": messages})
+        state = agent.invoke({"messages": messages},
+                             config={"callbacks": callbacks})
         messages = state["messages"]
         print(f"agent> {messages[-1].content}")
+    _flush_debug(args.debug)
     return 0
 
 

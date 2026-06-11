@@ -10,12 +10,12 @@ ANALYSIS_A = "SUMMARY: QEC protects qubits.\nCATEGORY: Error Correction\nTAGS: q
 ANALYSIS_B = "SUMMARY: Surface codes lead fault tolerance.\nCATEGORY: Surface Codes\nTAGS: codes"
 
 
-def _llm(extra_analyses: list[str]):
-    """Fake LLM replaying: optimize -> keywords -> one analysis per article."""
+def _llm(post_keywords: list[str]):
+    """Fake LLM replaying: optimize -> keywords -> quality check + analysis per article."""
     return FakeListChatModel(responses=[
         "Refined quantum error correction research topic",
         "quantum error correction\nsurface codes",
-        *extra_analyses,
+        *post_keywords,
     ])
 
 
@@ -35,7 +35,7 @@ class TestParseArticleAnalysis:
 
 class TestPipeline:
     def test_full_run_saves_articles_with_llm_summary(self, storage, fake_results):
-        llm = _llm([ANALYSIS_A, ANALYSIS_B])
+        llm = _llm(["KEEP", ANALYSIS_A, "KEEP", ANALYSIS_B])
         pipeline = build_pipeline(llm, FakeSearchClient(fake_results), storage)
         result = pipeline.invoke({"topic": "quantum"})
 
@@ -55,7 +55,7 @@ class TestPipeline:
 
     def test_second_run_skips_duplicates(self, storage, fake_results):
         # First run fills the kb.
-        pipeline1 = build_pipeline(_llm([ANALYSIS_A, ANALYSIS_B]),
+        pipeline1 = build_pipeline(_llm(["KEEP", ANALYSIS_A, "KEEP", ANALYSIS_B]),
                                    FakeSearchClient(fake_results), storage)
         pipeline1.invoke({"topic": "quantum"})
 
@@ -68,11 +68,20 @@ class TestPipeline:
         assert len(storage.list_metadata()) == 2  # nothing duplicated on disk
 
     def test_results_without_content_are_skipped_not_fatal(self, storage, fake_results):
-        # Empty body must be skipped without aborting the run.
+        # Empty body is rejected before quality check; only article B needs KEEP + analysis.
         fake_results[0].raw_content = "   "
         fake_results[1].raw_content = "Real content " * 10
-        pipeline = build_pipeline(_llm([ANALYSIS_B]),
+        pipeline = build_pipeline(_llm(["KEEP", ANALYSIS_B]),
                                   FakeSearchClient(fake_results), storage)
         result = pipeline.invoke({"topic": "quantum"})
         assert len(result["saved"]) == 1
         assert result["skipped"] == 1
+
+    def test_low_quality_content_is_skipped(self, storage, fake_results):
+        # LLM returns SKIP for article A (stub page) and KEEP for article B.
+        llm = _llm(["SKIP", "KEEP", ANALYSIS_B])
+        pipeline = build_pipeline(llm, FakeSearchClient(fake_results), storage)
+        result = pipeline.invoke({"topic": "quantum"})
+        assert len(result["saved"]) == 1
+        assert result["skipped"] == 1
+        assert storage.list_metadata()[0].url == "https://example.com/b"

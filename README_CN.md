@@ -82,6 +82,19 @@ uv run auto-knowledge-base graph --output pipeline.png   # PNG 图片，经 merm
 uv run auto-knowledge-base graph --output pipeline.mmd   # Mermaid 源码，完全离线
 ```
 
+### 查看 LLM 的输入与输出
+
+`build` 与 `agent` 均支持 `--debug` 参数，提供两种调试方式：
+
+```bash
+uv run auto-knowledge-base build ... --debug console    # 将每次 prompt 与响应直接打印到终端
+uv run auto-knowledge-base build ... --debug langfuse   # 追踪数据发送至自托管的 Langfuse（LangSmith 的开源替代品）
+```
+
+Langfuse 可通过 Docker 在本地一键启动，每次运行在 Web 界面中呈现为一条完整
+trace：各 LangGraph 节点、每次 LLM 调用的完整 prompt 与响应、Token 用量与耗时
+一目了然。部署与使用指南见 [docs/llm-debugging.md](docs/llm-debugging.md)。
+
 ### 输出目录结构
 
 ```
@@ -120,7 +133,7 @@ uv run pytest tests/test_pipeline.py   # 运行单个文件
 uv run pytest --cov=auto_knowledge_base --cov-report=term   # 统计覆盖率
 ```
 
-当前共 45 个测试，覆盖率约 91%。重点覆盖的场景包括：
+当前共 48 个测试，覆盖率约 92%。重点覆盖的场景包括：
 
 - 多用户目录隔离与路径穿越防护
 - 增量运行下 URL 级与内容哈希级的双重去重

@@ -101,6 +101,19 @@ uv run auto-knowledge-base graph --output pipeline.png   # image, rendered via m
 uv run auto-knowledge-base graph --output pipeline.mmd   # Mermaid source, fully offline
 ```
 
+### Inspecting LLM input & output
+
+Both `build` and `agent` accept `--debug` with two modes:
+
+```bash
+uv run auto-knowledge-base build ... --debug console    # print every prompt/response to the terminal
+uv run auto-knowledge-base build ... --debug langfuse   # trace to a self-hosted Langfuse server (open-source LangSmith alternative)
+```
+
+Langfuse runs locally via Docker and shows each run as a trace: every
+LangGraph node, the exact prompt/response of every LLM call, token usage and
+latency. Setup and web-UI walkthrough: [docs/llm-debugging.md](docs/llm-debugging.md).
+
 ### Output layout
 
 ```
@@ -144,7 +157,7 @@ uv run pytest tests/test_pipeline.py   # single file
 uv run pytest --cov=auto_knowledge_base --cov-report=term   # with coverage
 ```
 
-Current suite: 45 tests, ~91 % coverage. Key scenarios covered:
+Current suite: 48 tests, ~92 % coverage. Key scenarios covered:
 
 - multi-user folder isolation and path-traversal safety
 - URL-level and content-hash-level deduplication across incremental runs

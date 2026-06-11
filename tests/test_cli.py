@@ -14,8 +14,9 @@ ANALYSIS = "SUMMARY: s.\nCATEGORY: Cat\nTAGS: t"
 @pytest.fixture
 def patched_clients(monkeypatch, fake_results):
     """Replace the real OpenAI/Tavily factories with in-process fakes."""
+    # Per article: one KEEP (quality gate) then one analysis reply.
     monkeypatch.setattr(cli, "_make_llm", lambda model: FakeListChatModel(
-        responses=["refined topic", "kw1\nkw2", ANALYSIS, ANALYSIS]))
+        responses=["refined topic", "kw1\nkw2", "KEEP", ANALYSIS, "KEEP", ANALYSIS]))
     monkeypatch.setattr(cli, "_make_search",
                         lambda: FakeSearchClient(fake_results))
 
@@ -50,6 +51,51 @@ def test_agent_command_exits_on_quit(tmp_path, patched_clients, monkeypatch):
     rc = cli.main(["agent", "--user", "alice", "--kb", "demo",
                    "--data-root", str(tmp_path)])
     assert rc == 0
+
+
+def test_debug_console_mode_enables_global_llm_dump(tmp_path, patched_clients, capsys):
+    from langchain_core.globals import get_debug, set_debug
+    try:
+        rc = cli.main(["build", "--user", "alice", "--kb", "demo",
+                       "--topic", "quantum", "--data-root", str(tmp_path),
+                       "--debug", "console"])
+        assert rc == 0
+        assert get_debug() is True
+        # The console dump must include the actual prompt sent to the LLM.
+        assert "quantum" in capsys.readouterr().out
+    finally:
+        # set_debug is process-global; reset so other tests stay quiet.
+        set_debug(False)
+
+
+def test_debug_langfuse_mode_traces_llm_calls(tmp_path, patched_clients, monkeypatch):
+    from langchain_core.callbacks import BaseCallbackHandler
+
+    events, flushed = [], []
+
+    class FakeHandler(BaseCallbackHandler):
+        """Stands in for langfuse's CallbackHandler (network I/O)."""
+        def on_chat_model_start(self, serialized, messages, **kwargs):
+            events.append(messages)
+
+    class FakeClient:
+        def flush(self):
+            flushed.append(True)
+
+    import langfuse
+    import langfuse.langchain
+    monkeypatch.setattr(langfuse.langchain, "CallbackHandler", FakeHandler)
+    monkeypatch.setattr(langfuse, "get_client", lambda: FakeClient())
+
+    rc = cli.main(["build", "--user", "alice", "--kb", "demo",
+                   "--topic", "quantum", "--data-root", str(tmp_path),
+                   "--debug", "langfuse"])
+    assert rc == 0
+    # The handler must see every LLM call made inside the LangGraph nodes
+    # (topic optimization, keywords, one analysis per fake article).
+    assert len(events) >= 3
+    # Buffered traces must be flushed before the process exits.
+    assert flushed == [True]
 
 
 def test_graph_command_writes_mermaid_source(tmp_path, capsys):
