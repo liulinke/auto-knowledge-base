@@ -1,0 +1,40 @@
+# Byte-compiled / cache
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environments
+.venv/
+_venv/
+venv/
+.env
+
+# macOS
+.DS_Store
+
+# Build / distribution
+dist/
+build/
+*.egg-info/
+
+# Tool caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Logs and local databases
+*.log
+*.db
+*.sqlite
+
+# IDE
+.vscode/
+.idea/
+
+# Local knowledge-base data (user generated, never committed)
+kb_data/
+
+# Claude Code local settings
+.claude/settings.local.json
