@@ -1,7 +1,7 @@
 """Command line entry points.
 
-    auto-kb build --user alice --kb quantum --topic "quantum error correction"
-    auto-kb agent --user alice --kb quantum
+    auto-knowledge-base build --user alice --kb quantum --topic "quantum error correction"
+    auto-knowledge-base agent --user alice --kb quantum
 
 API keys (OPENAI_API_KEY, TAVILY_API_KEY) are read from a `.env` file
 in the working directory — copy `.env.sample` to `.env` and fill it in.
@@ -81,7 +81,7 @@ def main(argv: list[str] | None = None) -> int:
     # Pull API keys and overrides from .env before anything reads os.environ.
     load_env()
     cfg = AppConfig()
-    parser = argparse.ArgumentParser(prog="auto-kb",
+    parser = argparse.ArgumentParser(prog="auto-knowledge-base",
                                      description="Automated web collection & local knowledge base builder")
     sub = parser.add_subparsers(dest="command", required=True)
 

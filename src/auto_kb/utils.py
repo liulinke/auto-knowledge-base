@@ -74,7 +74,7 @@ def fetch_url(url: str, timeout: float = 20.0) -> str | None:
     """
     try:
         resp = httpx.get(url, timeout=timeout, follow_redirects=True,
-                         headers={"User-Agent": "auto-kb/0.1"})
+                         headers={"User-Agent": "auto-knowledge-base/0.1"})
         resp.raise_for_status()
         return resp.text
     except Exception:

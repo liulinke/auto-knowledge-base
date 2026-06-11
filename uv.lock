@@ -44,7 +44,7 @@ wheels = [
 ]
 
 [[package]]
-name = "auto-kb"
+name = "auto-knowledge-base"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [

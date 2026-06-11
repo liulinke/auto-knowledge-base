@@ -1,8 +1,8 @@
-# auto-kb — Automated Web Collection & Continuously Growing Local Knowledge Base
+# auto-knowledge-base — Automated Web Collection & Continuously Growing Local Knowledge Base
 
 ## Overview
 
-`auto-kb` turns a research topic into a structured, offline-browsable local
+`auto-knowledge-base` turns a research topic into a structured, offline-browsable local
 knowledge base. An LLM refines your topic, generates search keywords, collects
 the top web results, deduplicates against what is already stored, writes each
 article as clean Markdown with an **LLM-generated summary** in its sidecar
@@ -17,9 +17,7 @@ new articles are added. Deduplication works at two levels (source URL and
 content hash, both persisted in `_Metadata/` sidecar files), so repeated or
 overlapping queries never create duplicates.
 
-Documentation:
-- [Requirements (中文)](docs/requirements.md)
-- [Detailed design (中文)](docs/design.md)
+[中文说明 (Chinese version)](README_CN.md)
 
 ## Requirements
 
@@ -53,7 +51,7 @@ same knowledge base folder**, so you grow it query by query over time:
 
 ```bash
 # Day 1 — create the knowledge base with a first topic
-uv run auto-kb build \
+uv run auto-knowledge-base build \
   --user alice \
   --kb quantum-computing \
   --topic "quantum error correction" \
@@ -61,14 +59,14 @@ uv run auto-kb build \
 # => Saved 8 new article(s), skipped 0 duplicate(s).
 
 # Day 2 — same kb, a follow-up angle: only new material is added
-uv run auto-kb build \
+uv run auto-knowledge-base build \
   --user alice \
   --kb quantum-computing \
   --topic "surface codes and fault tolerance"
 # => Saved 5 new article(s), skipped 3 duplicate(s).   <- overlap auto-skipped
 
 # Weeks later — refresh the original topic to pick up recent results
-uv run auto-kb build \
+uv run auto-knowledge-base build \
   --user alice \
   --kb quantum-computing \
   --topic "quantum error correction 2026 advances"
@@ -87,7 +85,7 @@ first inspects what the kb **already contains**, then plans searches that fill
 the gaps, saving only new summarized articles:
 
 ```bash
-uv run auto-kb agent --user alice --kb quantum-computing
+uv run auto-knowledge-base agent --user alice --kb quantum-computing
 you> find recent surveys about surface codes
 agent> Saved 4 new articles under "Surface Codes" ...
 you> now add material about logical qubit demonstrations
@@ -133,7 +131,7 @@ uv run pytest tests/test_pipeline.py   # single file
 uv run pytest --cov=auto_kb --cov-report=term   # with coverage
 ```
 
-Current suite: 38 tests, ~91 % coverage. Key scenarios covered:
+Current suite: 42 tests, ~91 % coverage. Key scenarios covered:
 
 - multi-user folder isolation and path-traversal safety
 - URL-level and content-hash-level deduplication across incremental runs
@@ -142,19 +140,3 @@ Current suite: 38 tests, ~91 % coverage. Key scenarios covered:
 - offline `index.html` generation (embedded data, no CDN, `</script>` escaping)
 - deepagents tool wiring (search / save / list / rebuild-index)
 
-## Project structure
-
-```
-├── docs/                # requirements.md, design.md
-├── src/auto_kb/
-│   ├── cli.py           # auto-kb build / agent entry points
-│   ├── pipeline.py      # LangGraph StateGraph (6-node collection flow)
-│   ├── agent.py         # deepagents interactive research agent
-│   ├── storage.py       # multi-user kb folders, dedup, sidecar metadata
-│   ├── indexer.py       # README.md + offline index.html generators
-│   ├── search.py        # SearchClient protocol + Tavily implementation
-│   ├── models.py        # Pydantic models (ArticleMetadata, SearchResult)
-│   ├── utils.py         # slug / hash / HTML→Markdown helpers
-│   └── config.py        # defaults and env-based configuration
-└── tests/               # pytest suite with fake LLM + fake search
-```

@@ -22,7 +22,7 @@ def load_env() -> None:
     Existing environment variables win over .env values, so deployment
     overrides keep working. usecwd=True anchors the search at the
     invocation directory (not this module's install location), which is
-    what users expect when they run `auto-kb` inside their project.
+    what users expect when they run `auto-knowledge-base` inside their project.
     """
     load_dotenv(find_dotenv(usecwd=True), override=False)
 

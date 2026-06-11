@@ -1,5 +1,5 @@
 [project]
-name = "auto-kb"
+name = "auto-knowledge-base"
 version = "0.1.0"
 description = "Automated web data collection and local knowledge base builder (deepagents + langchain + langgraph)"
 requires-python = ">=3.11"
@@ -25,7 +25,7 @@ dev = [
 ]
 
 [project.scripts]
-auto-kb = "auto_kb.cli:main"
+auto-knowledge-base = "auto_kb.cli:main"
 
 [build-system]
 requires = ["hatchling"]

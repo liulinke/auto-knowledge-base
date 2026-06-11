@@ -147,8 +147,8 @@ API Key 与配置统一从项目根目录的 `.env` 文件读取（模板见 `.e
 CLI 命令：
 
 ```bash
-auto-kb build --user alice --kb quantum-computing --topic "量子计算纠错" --max-results 5
-auto-kb agent --user alice --kb quantum-computing        # 交互式 deepagents 模式
+auto-knowledge-base build --user alice --kb quantum-computing --topic "量子计算纠错" --max-results 5
+auto-knowledge-base agent --user alice --kb quantum-computing        # 交互式 deepagents 模式
 ```
 
 ## 7. 测试策略
