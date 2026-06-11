@@ -52,6 +52,37 @@ def test_agent_command_exits_on_quit(tmp_path, patched_clients, monkeypatch):
     assert rc == 0
 
 
+def test_graph_command_writes_mermaid_source(tmp_path, capsys):
+    out = tmp_path / "pipeline.mmd"
+    rc = cli.main(["graph", "--output", str(out)])
+    assert rc == 0
+    text = out.read_text(encoding="utf-8")
+    # All six pipeline nodes must appear in the rendered topology.
+    for node in ("optimize_topic", "generate_keywords", "search",
+                 "dedupe", "summarize_and_save", "update_index"):
+        assert node in text
+    assert f"Pipeline graph written to {out}" in capsys.readouterr().out
+
+
+def test_graph_command_writes_png(tmp_path, monkeypatch):
+    # PNG rendering calls the mermaid.ink web service; stub out that network I/O.
+    from langchain_core.runnables.graph import Graph
+    monkeypatch.setattr(Graph, "draw_mermaid_png",
+                        lambda self, **kwargs: b"\x89PNG fake bytes")
+    out = tmp_path / "pipeline.png"
+    rc = cli.main(["graph", "-o", str(out)])
+    assert rc == 0
+    assert out.read_bytes().startswith(b"\x89PNG")
+
+
+def test_graph_command_rejects_unknown_extension(tmp_path, capsys):
+    out = tmp_path / "pipeline.svg"
+    rc = cli.main(["graph", "--output", str(out)])
+    assert rc == 2
+    assert not out.exists()
+    assert "Unsupported output format" in capsys.readouterr().err
+
+
 def test_missing_command_is_an_error():
     with pytest.raises(SystemExit):
         cli.main([])

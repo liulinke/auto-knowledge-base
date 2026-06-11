@@ -2,6 +2,7 @@
 
     auto-knowledge-base build --user alice --kb quantum --topic "quantum error correction"
     auto-knowledge-base agent --user alice --kb quantum
+    auto-knowledge-base graph --output pipeline.png
 
 API keys (OPENAI_API_KEY, TAVILY_API_KEY) are read from a `.env` file
 in the working directory — copy `.env.sample` to `.env` and fill it in.
@@ -11,6 +12,7 @@ package stays import-safe without keys.
 
 import argparse
 import sys
+from pathlib import Path
 
 from .config import AppConfig, load_env
 from .storage import KnowledgeBaseStorage
@@ -77,6 +79,30 @@ def cmd_agent(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_graph(args: argparse.Namespace) -> int:
+    """Render the LangGraph pipeline topology to the requested file."""
+    from .pipeline import build_pipeline
+
+    # Nodes only touch the LLM/search/storage when invoked, so the graph
+    # can be compiled and drawn without API keys or a knowledge base.
+    pipeline = build_pipeline(llm=None, search_client=None, storage=None)
+    graph = pipeline.get_graph()
+
+    out = Path(args.output)
+    suffix = out.suffix.lower()
+    if suffix == ".png":
+        # Rendered via the mermaid.ink web service; needs network access.
+        out.write_bytes(graph.draw_mermaid_png())
+    elif suffix == ".mmd":
+        out.write_text(graph.draw_mermaid(), encoding="utf-8")
+    else:
+        print(f"Unsupported output format '{suffix or args.output}': "
+              "use .png (image) or .mmd (Mermaid source).", file=sys.stderr)
+        return 2
+    print(f"Pipeline graph written to {out}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     # Pull API keys and overrides from .env before anything reads os.environ.
     load_env()
@@ -95,6 +121,11 @@ def main(argv: list[str] | None = None) -> int:
     p_agent = sub.add_parser("agent", help="interactive deep agent session")
     _add_common_args(p_agent, cfg)
     p_agent.set_defaults(func=cmd_agent)
+
+    p_graph = sub.add_parser("graph", help="render the pipeline graph to a file")
+    p_graph.add_argument("--output", "-o", required=True,
+                         help="output file name: .png (image) or .mmd (Mermaid source)")
+    p_graph.set_defaults(func=cmd_graph)
 
     args = parser.parse_args(argv)
     return args.func(args)

@@ -1,0 +1,24 @@
+---
+config:
+  flowchart:
+    curve: linear
+---
+graph TD;
+	__start__([<p>__start__</p>]):::first
+	optimize_topic(optimize_topic)
+	generate_keywords(generate_keywords)
+	search(search)
+	dedupe(dedupe)
+	summarize_and_save(summarize_and_save)
+	update_index(update_index)
+	__end__([<p>__end__</p>]):::last
+	__start__ --> optimize_topic;
+	dedupe --> summarize_and_save;
+	generate_keywords --> search;
+	optimize_topic --> generate_keywords;
+	search --> dedupe;
+	summarize_and_save --> update_index;
+	update_index --> __end__;
+	classDef default fill:#f2f0ff,line-height:1.2
+	classDef first fill-opacity:0
+	classDef last fill:#bfb6fc

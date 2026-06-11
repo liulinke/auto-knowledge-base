@@ -1,44 +1,42 @@
-# auto-knowledge-base — 自动采集网络资料，攒一个会生长的本地知识库
+# auto-knowledge-base — 自动化网络资料采集与持续生长的本地知识库
 
 [English version](README.md)
 
-## 这是什么
+## 项目简介
 
-给它一个研究主题，剩下的它来：LLM 先把主题理顺、拆出几个搜索关键词，然后抓取排名靠前的网页，滤掉库里已有的内容，把每篇文章整理成干净的 Markdown 存好。摘要也由 LLM 代写，连同来源、标签一起放进每篇文章的 JSON 元数据里。最后生成一个 `index.html`，断网也能翻整个库。
+`auto-knowledge-base` 将一个研究主题自动转化为结构化、可离线浏览的本地知识库。整个流程由 LLM 驱动：先对主题进行优化改写，生成精准的搜索关键词，随后采集排名靠前的网页结果，与库中已有内容去重，将每篇文章转换为规范的 Markdown 并附带 **LLM 生成的摘要**写入元数据，最后重建可离线浏览的 `index.html`。项目基于 **deepagents**、**LangChain** 与 **LangGraph** 构建。
 
-基于 deepagents、LangChain 和 LangGraph。
+**知识库没有"完成"的概念——它会持续生长。** 存储层为每个用户、每个知识库各分配一个独立文件夹，所有运行均为增量式：无论是次日、数周后，还是想到相关问题的任何时刻，只要针对同一组 `--user`/`--kb` 再次运行查询，就只会写入真正的新文章。去重机制分两级（来源 URL 与内容哈希，均持久化于 `_Metadata/` 元数据文件中），因此重复或交叉的查询不会产生任何冗余。
 
-重点在"攒"字上：知识库不是一次建完就结束的。每个用户、每个库各占一个文件夹，今天建好，过几天换个角度接着查，只有新文章会进来。去重有两道关，来源 URL 一道，内容 Hash 一道，记录都在 `_Metadata/` 里，所以查询范围重叠也不怕存重。
+## 环境要求
 
-## 需要准备什么
-
-- Python 3.11 以上
-- [`uv`](https://docs.astral.sh/uv/)
-- 两个 API Key（只跑测试的话不用）：
-  - `OPENAI_API_KEY`：LLM 用，默认模型 `gpt-4o-mini`
-  - `TAVILY_API_KEY`：搜索用
+- Python 3.11 及以上
+- [`uv`](https://docs.astral.sh/uv/)（推荐的包管理工具）
+- 实际采集时需要以下 API Key（仅运行测试时无需配置）：
+  - `OPENAI_API_KEY` — 用于主题优化、关键词生成与摘要撰写，默认模型为 `gpt-4o-mini`
+  - `TAVILY_API_KEY` — 用于网络搜索
 
 ## 安装
 
 ```bash
-# 建虚拟环境 + 装全部依赖（含 pytest 等开发工具），一步到位
+# 一条命令完成虚拟环境创建与全部依赖安装（含 pytest 等开发依赖）
 uv sync
 
-# 把样例配置复制一份，填入自己的 Key
-# .env 不会进 git，程序启动时自动读取
+# 复制配置模板并填入 API Key
+# .env 已被 git 忽略，程序启动时会自动加载
 cp .env.sample .env
 ```
 
-之后所有命令都走 `uv run ...`，不用手动激活虚拟环境。
+后续所有命令均通过 `uv run ...` 执行，无需手动激活虚拟环境。
 
-## 怎么用
+## 使用方法
 
-### 流水线模式：建库，然后慢慢养
+### 采集流水线（LangGraph）：建库并持续扩充
 
-`build` 每次跑一遍固定流程：优化主题 → 生成关键词 → 搜索 → 去重 → 摘要入库 → 重建索引。库可以反复养：
+每次 `build` 都会执行一条确定性流程（主题优化 → 关键词生成 → 搜索 → 去重 → 摘要入库 → 重建索引），并始终作用于**同一个知识库目录**，因此可以一次次查询、逐步积累：
 
 ```bash
-# 第一天，建库
+# 第一天：以初始主题建库
 uv run auto-knowledge-base build \
   --user alice \
   --kb quantum-computing \
@@ -46,14 +44,14 @@ uv run auto-knowledge-base build \
   --max-results 5
 # => Saved 8 new article(s), skipped 0 duplicate(s).
 
-# 第二天，换个角度再查。和昨天重复的 3 篇被自动跳过
+# 第二天：同一知识库，换一个切入角度，仅新增内容会被写入
 uv run auto-knowledge-base build \
   --user alice \
   --kb quantum-computing \
   --topic "surface codes and fault tolerance"
-# => Saved 5 new article(s), skipped 3 duplicate(s).
+# => Saved 5 new article(s), skipped 3 duplicate(s).   <- 重叠部分自动跳过
 
-# 几周后，回头刷新最早的主题，看看有没有新文章
+# 数周后：重新检索最初的主题，补充最新进展
 uv run auto-knowledge-base build \
   --user alice \
   --kb quantum-computing \
@@ -61,11 +59,11 @@ uv run auto-knowledge-base build \
 # => Saved 2 new article(s), skipped 6 duplicate(s).
 ```
 
-每跑完一次，库里的 `README.md` 和 `index.html` 都会重建，历次采集的文章按分类汇总在一起。入过库的东西不会再下载第二遍。
+每次运行结束后，知识库内的 `README.md` 与 `index.html` 都会重建，呈现**历次累积**的全部内容——所有文章按分类汇总展示。已入库的内容不会被重复下载或重复存储：凡是 `_Metadata/` 中已记录的 URL 或内容哈希，一律自动跳过。
 
-### Agent 模式：边聊边攒
+### 交互式深度智能体（deepagents）：对话式扩充
 
-不想自己琢磨关键词，就直接和 Agent 聊。它先看库里有什么，再决定搜什么，摘要写好才入库：
+智能体是扩充既有知识库的另一种方式：它会先检视库中**已有的内容**，再规划补足空缺的搜索方案，仅保存附有摘要的新文章：
 
 ```bash
 uv run auto-knowledge-base agent --user alice --kb quantum-computing
@@ -75,40 +73,58 @@ you> now add material about logical qubit demonstrations
 agent> The kb already covers 2 of the top results; saved 3 new articles ...
 ```
 
-### 库的结构
+### 导出流水线结构图
+
+将 LangGraph 流水线的拓扑结构渲染为指定文件（无需任何 API Key）：
+
+```bash
+uv run auto-knowledge-base graph --output pipeline.png   # PNG 图片，经 mermaid.ink 渲染（需联网）
+uv run auto-knowledge-base graph --output pipeline.mmd   # Mermaid 源码，完全离线
+```
+
+### 输出目录结构
 
 ```
 kb_data/<user>/<kb>/
-├── README.md            # 全库总览：主题、关键词、文章清单
-├── index.html           # 双击打开，离线浏览：目录树 / 搜索 / 预览
+├── README.md            # AI 汇总的总览：主题、关键词范围、文章清单
+├── index.html           # 双击即开的离线浏览器：目录树 / 搜索 / Markdown 预览
 ├── Articles/<分类>/<文章>.md
-├── Attachments/         # 图片等多媒体，和正文分开放
+├── Attachments/         # 多媒体附件，与正文分开存放
 ├── Data/Raw/  Data/Processed/
-└── _Metadata/<分类>/<文章>.json   # URL、Hash、标签、LLM 摘要
+└── _Metadata/<分类>/<文章>.json   # URL、内容哈希、标签、LLM 摘要等
 ```
 
-`index.html` 不依赖任何 CDN，断网照样能搜、能看。
+直接在浏览器中打开 `kb_data/<user>/<kb>/index.html` 即可浏览——完全离线、不依赖任何 CDN，提供可折叠的分类目录树、搜索框与 Markdown 预览。
+
+完整的目录规范——文件格式、`_Metadata/` 元数据 JSON 字段定义、面向 AI Agent 的查询方法以及可依赖的结构约定——详见 [docs/knowledge-base-structure.md](docs/knowledge-base-structure.md)。
 
 ### 配置
 
-都可以写进 `.env`（参考 `.env.sample`）。环境变量里已有同名值时，以环境变量为准。
+所有配置项均可写入 `.env`（参见 `.env.sample`）。已存在的环境变量优先于 `.env` 中的取值。
 
 | 配置项 | 命令行参数 | 环境变量 | 默认值 |
 | --- | --- | --- | --- |
 | 存储根目录 | `--data-root` | `AUTO_KB_DATA_ROOT` | `./kb_data` |
 | 模型 | `--model` | `AUTO_KB_MODEL` | `gpt-4o-mini` |
-| OpenAI Key | 无 | `OPENAI_API_KEY` | 必填 |
-| Tavily Key | 无 | `TAVILY_API_KEY` | 必填 |
+| OpenAI Key | — | `OPENAI_API_KEY` | 实际采集时必填 |
+| Tavily Key | — | `TAVILY_API_KEY` | 实际采集时必填 |
 
 ## 测试
 
-测试用假的 LLM 和搜索客户端，不联网、不花钱：
+单元测试使用模拟的 LLM 与搜索客户端，无需联网，也无需配置 API Key。
 
 ```bash
-uv run pytest                      # 全部测试
+uv run pytest                      # 运行全部测试
 uv run pytest -v --tb=short       # 详细输出
-uv run pytest tests/test_pipeline.py   # 只跑一个文件
-uv run pytest --cov=auto_knowledge_base --cov-report=term   # 看覆盖率
+uv run pytest tests/test_pipeline.py   # 运行单个文件
+uv run pytest --cov=auto_knowledge_base --cov-report=term   # 统计覆盖率
 ```
 
-目前 42 个测试，覆盖率约 91%。重点盯这几件事：用户目录互相隔离、`../` 这类恶意路径会被清洗；两级去重在反复运行时真的生效；摘要确实写进了元数据；流水线端到端能跑通，第二次运行能把旧文章全部跳过；`index.html` 无外部依赖、`</script>` 已转义；Agent 的四个工具都落到存储层。
+当前共 45 个测试，覆盖率约 91%。重点覆盖的场景包括：
+
+- 多用户目录隔离与路径穿越防护
+- 增量运行下 URL 级与内容哈希级的双重去重
+- 与文章一一对应的 `_Metadata/` 元数据文件及其 LLM 摘要
+- LangGraph 流水线端到端运行（含二次运行时跳过全部重复项）
+- 离线 `index.html` 生成（数据内嵌、无 CDN 依赖、`</script>` 转义）
+- deepagents 工具链路（搜索 / 保存 / 列表 / 重建索引）
