@@ -1,6 +1,6 @@
-"""Tests for the pure helper functions in auto_kb.utils."""
+"""Tests for the pure helper functions in auto_knowledge_base.utils."""
 
-from auto_kb.utils import content_hash, extract_title, html_to_markdown, slugify
+from auto_knowledge_base.utils import content_hash, extract_title, html_to_markdown, slugify
 
 
 class TestSlugify:

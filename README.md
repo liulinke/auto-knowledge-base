@@ -128,7 +128,7 @@ Unit tests use fake LLM and search clients — no network or API keys needed.
 uv run pytest                      # run all tests
 uv run pytest -v --tb=short       # verbose
 uv run pytest tests/test_pipeline.py   # single file
-uv run pytest --cov=auto_kb --cov-report=term   # with coverage
+uv run pytest --cov=auto_knowledge_base --cov-report=term   # with coverage
 ```
 
 Current suite: 42 tests, ~91 % coverage. Key scenarios covered:

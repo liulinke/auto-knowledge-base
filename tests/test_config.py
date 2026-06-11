@@ -2,7 +2,7 @@
 
 import os
 
-from auto_kb.config import AppConfig, DEFAULT_MODEL, load_env
+from auto_knowledge_base.config import AppConfig, DEFAULT_MODEL, load_env
 
 
 class TestAppConfig:

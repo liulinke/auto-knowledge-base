@@ -108,7 +108,7 @@ kb_data/<user>/<kb>/
 uv run pytest                      # 全部测试
 uv run pytest -v --tb=short       # 详细输出
 uv run pytest tests/test_pipeline.py   # 只跑一个文件
-uv run pytest --cov=auto_kb --cov-report=term   # 看覆盖率
+uv run pytest --cov=auto_knowledge_base --cov-report=term   # 看覆盖率
 ```
 
 目前 42 个测试，覆盖率约 91%。重点盯这几件事：用户目录互相隔离、`../` 这类恶意路径会被清洗；两级去重在反复运行时真的生效；摘要确实写进了元数据；流水线端到端能跑通，第二次运行能把旧文章全部跳过；`index.html` 无外部依赖、`</script>` 已转义；Agent 的四个工具都落到存储层。

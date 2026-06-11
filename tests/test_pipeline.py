@@ -2,7 +2,7 @@
 
 from langchain_core.language_models import FakeListChatModel
 
-from auto_kb.pipeline import build_pipeline, parse_article_analysis
+from auto_knowledge_base.pipeline import build_pipeline, parse_article_analysis
 
 from .conftest import FakeSearchClient
 

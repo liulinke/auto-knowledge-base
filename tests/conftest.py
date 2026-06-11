@@ -5,8 +5,8 @@ No test in this suite touches the network or needs an API key.
 
 import pytest
 
-from auto_kb.models import SearchResult
-from auto_kb.storage import KnowledgeBaseStorage
+from auto_knowledge_base.models import SearchResult
+from auto_knowledge_base.storage import KnowledgeBaseStorage
 
 
 class FakeSearchClient:

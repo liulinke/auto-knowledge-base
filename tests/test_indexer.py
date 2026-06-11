@@ -1,7 +1,7 @@
 """Tests for README.md and offline index.html generation."""
 
-from auto_kb.indexer import generate_index_html, generate_readme
-from auto_kb.models import ArticleMetadata
+from auto_knowledge_base.indexer import generate_index_html, generate_readme
+from auto_knowledge_base.models import ArticleMetadata
 
 
 def _save_sample(storage):

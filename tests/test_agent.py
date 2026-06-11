@@ -4,8 +4,8 @@ import json
 
 from langchain_core.language_models import FakeListChatModel
 
-import auto_kb.agent as agent_mod
-from auto_kb.agent import create_kb_agent
+import auto_knowledge_base.agent as agent_mod
+from auto_knowledge_base.agent import create_kb_agent
 
 from .conftest import FakeSearchClient
 

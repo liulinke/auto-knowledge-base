@@ -4,7 +4,7 @@ injected fake LLM / search clients (no network, no API keys)."""
 import pytest
 from langchain_core.language_models import FakeListChatModel
 
-import auto_kb.cli as cli
+import auto_knowledge_base.cli as cli
 
 from .conftest import FakeSearchClient
 

@@ -2,8 +2,8 @@
 
 import json
 
-from auto_kb.models import ArticleMetadata
-from auto_kb.storage import KnowledgeBaseStorage
+from auto_knowledge_base.models import ArticleMetadata
+from auto_knowledge_base.storage import KnowledgeBaseStorage
 
 
 def _meta(url="https://example.com/x", title="My Article",
